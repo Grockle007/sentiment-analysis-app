@@ -35,37 +35,44 @@ export default function OrderBook() {
         setConnectionStatus('connecting');
         setErrorMsg(null);
 
-        const connect = () => {
+        const connect = (urlOverride?: string, isRetry = false) => {
             try {
-                let url = '';
-                if (exchange === 'binance') {
-                    url = 'wss://stream.binance.com:9443/ws/btcusdt@depth20@100ms';
-                } else if (exchange === 'coinbase') {
-                    url = 'wss://ws-feed.exchange.coinbase.com';
-                } else if (exchange === 'kraken') {
-                    url = 'wss://ws.kraken.com';
+                let url = urlOverride || '';
+
+                if (!url) {
+                    if (exchange === 'binance') {
+                        url = 'wss://stream.binance.com:9443/ws/btcusdt@depth20@100ms';
+                    } else if (exchange === 'coinbase') {
+                        url = 'wss://ws-feed.exchange.coinbase.com';
+                    } else if (exchange === 'kraken') {
+                        url = 'wss://ws.kraken.com';
+                    }
                 }
 
+                console.log(`Connecting to ${exchange} at ${url}...`);
                 ws = new WebSocket(url);
                 wsRef.current = ws;
 
                 ws.onopen = () => {
                     console.log(`Connected to ${exchange} WebSocket`);
                     setConnectionStatus('connected');
+                    setErrorMsg(null);
 
                     // Subscribe messages for non-Binance exchanges
                     if (exchange === 'coinbase') {
-                        ws?.send(JSON.stringify({
+                        const msg = JSON.stringify({
                             type: 'subscribe',
                             product_ids: ['BTC-USD'],
                             channels: ['level2']
-                        }));
+                        });
+                        ws?.send(msg);
                     } else if (exchange === 'kraken') {
-                        ws?.send(JSON.stringify({
+                        const msg = JSON.stringify({
                             event: 'subscribe',
                             pair: ['XBT/USD'],
                             subscription: { name: 'book', depth: 25 }
-                        }));
+                        });
+                        ws?.send(msg);
                     }
                 };
 
@@ -80,17 +87,25 @@ export default function OrderBook() {
 
                 ws.onerror = (error) => {
                     console.error('WebSocket error:', error);
-                    if (connectionStatus !== 'connected') {
-                        setConnectionStatus('error');
-                        setErrorMsg(`Failed to connect to ${exchange}`);
-                    }
+                    // Don't set error immediately, wait for close to decide if it's fatal or retryable
                 };
 
-                ws.onclose = () => {
-                    console.log('WebSocket connection closed');
+                ws.onclose = (event) => {
+                    console.log('WebSocket connection closed', event.code, event.reason);
+
+                    if (exchange === 'binance' && !isRetry && !urlOverride) {
+                        console.log('Binance connection closed, trying US endpoint...');
+                        // Try Binance US if global fails (likely geo-blocked)
+                        connect('wss://stream.binance.us:9443/ws/btcusdt@depth20@100ms', true);
+                        return;
+                    }
+
                     if (connectionStatus === 'connected') {
                         setConnectionStatus('error');
-                        setErrorMsg('Connection lost');
+                        setErrorMsg('Connection lost. Refresh to reconnect.');
+                    } else {
+                        setConnectionStatus('error');
+                        setErrorMsg(`Failed to connect to ${exchange}. Check console for details.`);
                     }
                 };
             } catch (e) {
@@ -197,7 +212,7 @@ export default function OrderBook() {
 
                     {lastPrice && (
                         <div className={`text-2xl font-mono font-bold flex items-center gap-2 ${priceDirection === 'up' ? 'text-green-500' :
-                                priceDirection === 'down' ? 'text-red-500' : ''
+                            priceDirection === 'down' ? 'text-red-500' : ''
                             }`}>
                             ${lastPrice.toFixed(2)}
                             {priceDirection === 'up' && <ArrowUp className="h-6 w-6" />}
