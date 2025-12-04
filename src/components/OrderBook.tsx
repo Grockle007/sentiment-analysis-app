@@ -63,7 +63,7 @@ export default function OrderBook() {
                         const msg = JSON.stringify({
                             type: 'subscribe',
                             product_ids: ['BTC-USD'],
-                            channels: ['level2']
+                            channels: ['level2_batch']
                         });
                         ws?.send(msg);
                     } else if (exchange === 'kraken') {
