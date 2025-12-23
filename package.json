@@ -24,9 +24,11 @@
     "react": "19.2.0",
     "react-day-picker": "^9.11.1",
     "react-dom": "19.2.0",
+    "recharts": "^3.6.0",
     "sentiment": "^5.0.2",
     "tailwind-merge": "^3.4.0",
-    "twilio": "^5.10.6"
+    "twilio": "^5.10.6",
+    "yahoo-finance2": "^3.10.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

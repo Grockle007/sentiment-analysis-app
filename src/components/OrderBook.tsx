@@ -86,8 +86,10 @@ export default function OrderBook() {
                 };
 
                 ws.onerror = (error) => {
-                    console.error('WebSocket error:', error);
-                    // Don't set error immediately, wait for close to decide if it's fatal or retryable
+                    // Only log if it's a real error event, not just a close
+                    // console.error('WebSocket error:', error); 
+                    // Most browser WS errors are empty events for privacy, so logging 'error' is often useless.
+                    // We rely on onclose for status updates.
                 };
 
                 ws.onclose = (event) => {

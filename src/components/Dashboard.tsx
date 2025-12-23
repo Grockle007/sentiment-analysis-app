@@ -152,6 +152,12 @@ export default function Dashboard() {
                             Bitcoin Live
                         </Button>
                     </Link>
+                    <Link href="/stocks">
+                        <Button variant="outline">
+                            <TrendingUp className="mr-2 h-4 w-4" />
+                            Stock Analysis
+                        </Button>
+                    </Link>
                     <Button onClick={sendSms} disabled={smsStatus === 'sending' || smsStatus === 'sent'} variant="outline">
                         <Send className="mr-2 h-4 w-4" />
                         {smsStatus === 'sending' ? 'Sending...' : smsStatus === 'sent' ? 'Sent!' : 'Send Daily Email'}
